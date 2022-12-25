@@ -17,9 +17,9 @@ with open(r"raw_productsbyyesil.csv", mode='r', encoding='utf-8') as csv_file:
                 temp['Handle'] = handle
                 temp['Title'] = row['title']
                 temp['Body (HTML)'] = row['desc']
-                temp['Vendor'] = 'Luxlushy'
-                temp['Standardized Product Type'] = 'Furniture > Tables'
-                temp['Custom Product Type'] = 'Wodden Tables'
+                temp['Vendor'] = 'Luxlushy' # FIXED
+                temp['Standardized Product Type'] = 'Furniture > Tables' # FIXED
+                temp['Custom Product Type'] = 'Wodden Tables' # FIXED
                 temp['Published'] = 'TRUE'
                 temp['Variant SKU'] = f'T-L{counter:06}'
                 temp['Variant Inventory Tracker'] = 'shopify'
