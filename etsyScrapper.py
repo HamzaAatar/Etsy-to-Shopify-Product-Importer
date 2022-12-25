@@ -2,7 +2,6 @@ from http.client import HTTPException
 from bs4 import BeautifulSoup
 import requests
 import csv
-import asyncio
 
 
 def get_title(soup) -> str:
