@@ -2,6 +2,12 @@ from http.client import HTTPException
 from bs4 import BeautifulSoup
 import requests
 import csv
+import asyncio
+from httpx import AsyncClient
+import time
+from concurrent.futures import ProcessPoolExecutor
+import os
+from functools import reduce
 
 
 def get_title(soup) -> str:
@@ -25,7 +31,8 @@ def get_images(soup) -> list:
         URLs = [ img.get('src') if img.get('src') else img.get('data-src') for img in images]
         return URLs
 
-def get_number_of_pages(soup) -> int:
+def get_number_of_pages(html) -> int:
+        soup = BeautifulSoup(html, "html.parser")
         pages = soup.select('#content > div.shop-home > div.wt-body-max-width.wt-pr-xs-2.wt-pr-md-4.wt-pl-xs-2.wt-pl-md-4 > div:nth-child(2) > span > div.wt-display-flex-lg > div.wt-pr-xs-0.wt-pl-xs-0.shop-home-wider-items.wt-pb-xs-5 > div.wt-animated > div.wt-text-center-xs > div.wt-show-md.wt-hide-lg > nav > ul > li > a > span:nth-child(2)')
 
         return max(map(lambda x: int(x.text.strip()), pages[1:-1]))
@@ -33,15 +40,29 @@ def get_number_of_pages(soup) -> int:
 def get_soup(url) -> BeautifulSoup:
         try:
                 res = requests.get(url)
-                soup = BeautifulSoup(res.content, 'html.parser')
         except HTTPException as e:
                 print(e)
-                soup = None   
-        return soup # .encode("utf-8")
+        return res.content # .encode("utf-8")
 
-def get_product_data(URL) -> dict:
+async def get_html_async(URL, session, throttler=None):
+        if throttler:
+                async with throttler:
+                        try:
+                                res = await session.get(URL)
+                        except HTTPException as e:
+                                print(e)
+                                return None
+        else:
+                try:
+                        res = await session.get(URL)
+                except HTTPException as e:
+                        print(e)
+                        return None
+        return res.content
+
+def get_product_data(html) -> dict:
         try:
-                soup = get_soup(URL)
+                soup = BeautifulSoup(html, 'html.parser')
                 data = {
                         'title': get_title(soup),
                         'price': get_price(soup),
@@ -53,33 +74,41 @@ def get_product_data(URL) -> dict:
                 pass
         return data
 
-def get_product_links(soup) -> list[str]:
+def get_product_links(html) -> list[str]:
+        soup = BeautifulSoup(html, 'html.parser')
         listingPage = soup.select('#content > div.shop-home > div.wt-body-max-width.wt-pr-xs-2.wt-pr-md-4.wt-pl-xs-2.wt-pl-md-4 > div:nth-child(2) > span > div.wt-display-flex-lg > div.wt-pr-xs-0.wt-pl-xs-0.shop-home-wider-items.wt-pb-xs-5 > div.wt-animated > div:nth-child(4) > div > div > div > a')
         return [product['href'] for product in listingPage]
 
-def scrapeShop(url) -> list[dict]:
-        products = []
-        print(f"############ Scrapping {url.split('/')[3]} ############")
-        print("############ Getting Links from 1st page ############")
-        soup = get_soup(f'{url}?page=1')
-        product_URLS = get_product_links(soup)
-        pages = get_number_of_pages(soup)
-        if pages > 1:
+async def run(url):
+        _start = time.time()
+        html = get_soup(url + "")
+        links = get_product_links(html)
+        pages = get_number_of_pages(html)
+        throttler = asyncio.Semaphore(os.cpu_count() + 4)
+        async with AsyncClient() as session:
+                tasks, html = [], []
                 for page in range(2, pages + 1):
-                        print(f"############ Getting Links from {page}th page ############")
-                        soup = get_soup(f'{url}?page={page}')
-                        product_URLS += get_product_links(soup)
-        for URL in product_URLS:
-                print(f'Scraping product number: {len(products) + 1}...')
-                products.append(get_product_data(URL))
-                print(f'Product number: {len(products)} scrapped Successfully!!')
-                                
+                        tasks.append(get_html_async(f'{url}?page={page}', session=session, throttler=throttler))
+                htmls = await asyncio.gather(*tasks)
+
+                with ProcessPoolExecutor(max_workers= os.cpu_count()) as ex:
+                        futures = [ex.submit(get_product_links, html) for html in htmls]
+                        links.extend(reduce(lambda x, y: x + y, [future.result() for future in futures]))
+                tasks, html = [], []
+                for link in links:
+                        tasks.append(get_html_async(link, session=session, throttler=throttler))
+                htmls = await asyncio.gather(*tasks)
+
+        with ProcessPoolExecutor(max_workers= os.cpu_count()) as ex:
+                futures = [ex.submit(get_product_data, html) for html in htmls]
+                products = [future.result() for future in futures]
+        print(f"finished scraping in: {time.time() - _start:.1f} seconds")
         return products
 
-def main(URL) -> None:
+async def main(URL) -> None:
         shop = URL.split('/')[4].split('?')[0]
         URL = f"https://www.etsy.com/shop/{shop}"
-        products = scrapeShop(URL)
+        products = await run(URL)
         keys = products[0].keys()
         with open(f"./CSV/raw_products_{shop}.csv", "w", encoding='utf-8', newline='') as a_file:
                 dict_writer = csv.DictWriter(a_file, keys)
@@ -87,5 +116,5 @@ def main(URL) -> None:
                 dict_writer.writerows(products)
 
 if __name__ == '__main__':
-        url = "https://www.etsy.com/shop/PetajaFiberWorks"
-        main(url)
+        url = "https://www.etsy.com/shop/byyesil?ref=simple-shop-header-name&listing_id=1277737721"
+        asyncio.run(main(url))
