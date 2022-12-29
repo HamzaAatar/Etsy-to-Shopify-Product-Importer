@@ -8,49 +8,49 @@ template = dict(zip(header, values))
 products = list()
 
 with open(r"raw_productsbyyesil.csv", mode='r', encoding='utf-8') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        counter = 1
-        for row in csv_reader:
-                temp = copy(template)
-                handle = row['title'].replace(' ', '-').strip()
-                handle = handle.replace('|', '').strip()
-                temp['Handle'] = handle
-                temp['Title'] = row['title']
-                temp['Body (HTML)'] = row['desc']
-                temp['Vendor'] = 'Luxlushy' # FIXED
-                temp['Standardized Product Type'] = 'Furniture > Tables' # FIXED
-                temp['Custom Product Type'] = 'Wodden Tables' # FIXED
-                temp['Published'] = 'TRUE'
-                temp['Variant SKU'] = f'T-L{counter:06}'
-                temp['Variant Inventory Tracker'] = 'shopify'
-                temp['Variant Inventory Qty'] = '1'
-                temp['Variant Inventory Policy'] = 'deny'
-                temp['Variant Fulfillment Service'] = 'manual'
-                temp['Variant Price'] = row['price']
-                temp['Variant Requires Shipping'] = 'TRUE'
-                temp['Variant Taxable'] = 'TRUE'
-                temp['Variant Barcode'] = temp['Variant SKU']
-                temp['Image Src'] = row['images'].strip("]'[").split(', ')[0][:-1]
-                temp['Image Position'] = '1'
-                temp['Image Alt Text'] = handle
-                temp['Gift Card'] = 'FALSE'
-                temp['Status'] = 'draft'
+    csv_reader = csv.DictReader(csv_file)
+    counter = 1
+    for row in csv_reader:
+        temp = copy(template)
+        handle = row['title'].replace(' ', '-').strip()
+        handle = handle.replace('|', '').strip()
+        temp['Handle'] = handle
+        temp['Title'] = row['title']
+        temp['Body (HTML)'] = row['desc']
+        temp['Vendor'] = 'Luxlushy' # FIXED
+        temp['Standardized Product Type'] = 'Furniture > Tables' # FIXED
+        temp['Custom Product Type'] = 'Wodden Tables' # FIXED
+        temp['Published'] = 'TRUE'
+        temp['Variant SKU'] = f'T-L{counter:06}'
+        temp['Variant Inventory Tracker'] = 'shopify'
+        temp['Variant Inventory Qty'] = '1'
+        temp['Variant Inventory Policy'] = 'deny'
+        temp['Variant Fulfillment Service'] = 'manual'
+        temp['Variant Price'] = row['price']
+        temp['Variant Requires Shipping'] = 'TRUE'
+        temp['Variant Taxable'] = 'TRUE'
+        temp['Variant Barcode'] = temp['Variant SKU']
+        temp['Image Src'] = row['images'].strip("]'[").split(', ')[0][:-1]
+        temp['Image Position'] = '1'
+        temp['Image Alt Text'] = handle
+        temp['Gift Card'] = 'FALSE'
+        temp['Status'] = 'draft'
 
-                products.append(temp)
+        products.append(temp)
 
-                for i, image in enumerate(row['images'].strip('][').split(', ')):
-                        if i == 0:
-                                pass
-                        else:
-                                temp_2 = copy(template)
-                                temp_2['Handle'] = handle
-                                temp_2['Image Src'] = image[1:-1]
-                                temp_2['Image Position'] = i+1
-                                temp_2['Image Alt Text'] = f"{handle}-{i+1}"
-                                products.append(temp_2)
+        for i, image in enumerate(row['images'].strip('][').split(', ')):
+            if i == 0:
+                pass
+            else:
+                temp_2 = copy(template)
+                temp_2['Handle'] = handle
+                temp_2['Image Src'] = image[1:-1]
+                temp_2['Image Position'] = i+1
+                temp_2['Image Alt Text'] = f"{handle}-{i+1}"
+                products.append(temp_2)
 
 
-                counter += 1
+        counter += 1
 
 
 keys = products[0].keys()
