@@ -37,7 +37,6 @@ with open(r"raw_productsbyyesil.csv", mode='r', encoding='utf-8') as csv_file:
         temp['Status'] = 'draft'
 
         products.append(temp)
-
         for i, image in enumerate(row['images'].strip('][').split(', ')):
             if i == 0:
                 pass
@@ -48,13 +47,9 @@ with open(r"raw_productsbyyesil.csv", mode='r', encoding='utf-8') as csv_file:
                 temp_2['Image Position'] = i+1
                 temp_2['Image Alt Text'] = f"{handle}-{i+1}"
                 products.append(temp_2)
-
-
         counter += 1
 
-
 keys = products[0].keys()
-
 a_file = open("final_shopify_Epoxy_Tables.csv", "w", encoding='utf-8')
 dict_writer = csv.DictWriter(a_file, keys, lineterminator = '\n', quotechar='"')
 dict_writer.writeheader()
