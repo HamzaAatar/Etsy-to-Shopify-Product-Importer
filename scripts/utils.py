@@ -25,7 +25,6 @@ def get_images(soup) -> list:
 def get_number_of_pages(html) -> int:
     soup = BeautifulSoup(html, "html.parser")
     pages = soup.select('#content > div.shop-home > div.wt-body-max-width.wt-pr-xs-2.wt-pr-md-4.wt-pl-xs-2.wt-pl-md-4 > div:nth-child(2) > span > div.wt-display-flex-lg > div.wt-pr-xs-0.wt-pl-xs-0.shop-home-wider-items.wt-pb-xs-5 > div.wt-animated > div.wt-text-center-xs > div.wt-show-md.wt-hide-lg > nav > ul > li > a > span:nth-child(2)')
-
     return max(map(lambda x: int(x.text.strip()), pages[1:-1]))
 
 def get_product_data(html) -> dict:

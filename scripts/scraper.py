@@ -1,21 +1,15 @@
-from http.client import HTTPException
-import requests
-import csv
 import asyncio
-from httpx import AsyncClient
+import csv
+import os
 import time
 from concurrent.futures import ProcessPoolExecutor
-import os
 from functools import reduce
-from .utils import get_product_data, get_product_links, get_number_of_pages
+from http.client import HTTPException
 
+from httpx import AsyncClient
 
-def get_soup(url):
-    try:
-        res = requests.get(url)
-    except HTTPException as e:
-        print(e)
-    return res.content # .encode("utf-8")
+from .utils import get_number_of_pages, get_product_data, get_product_links
+
 
 async def get_html_async(URL, session, throttler=None):
     if throttler:
@@ -34,32 +28,33 @@ async def get_html_async(URL, session, throttler=None):
     return res.content
 
 async def run(url):
-    _start = time.time()
-    # html = get_soup(url + "")
-    # links = get_product_links(html)
-    # pages = get_number_of_pages(html)
     throttler = asyncio.Semaphore(os.cpu_count() + 4)
     async with AsyncClient() as session:
+        print("Gathering Product links...")
         html = await get_html_async(url, session=session)
         links = get_product_links(html)
         pages = get_number_of_pages(html)
+
         tasks, html = [], []
         for page in range(2, pages + 1):
             tasks.append(get_html_async(f'{url}?page={page}', session=session, throttler=throttler))
-        htmls = await asyncio.gather(*tasks)
 
+        htmls = await asyncio.gather(*tasks)
         with ProcessPoolExecutor(max_workers= os.cpu_count()) as ex:
             futures = [ex.submit(get_product_links, html) for html in htmls]
             links.extend(reduce(lambda x, y: x + y, [future.result() for future in futures]))
+
+        print("Scraping Product listings...")
         tasks, html = [], []
         for link in links:
             tasks.append(get_html_async(link, session=session, throttler=throttler))
         htmls = await asyncio.gather(*tasks)
 
+    print("Parsing Product data...")
     with ProcessPoolExecutor(max_workers= os.cpu_count()) as ex:
         futures = [ex.submit(get_product_data, html) for html in htmls]
         products = [future.result() for future in futures]
-    print(f"finished scraping in: {time.time() - _start:.1f} seconds")
+
     return products
 
 async def main(URL) -> None:

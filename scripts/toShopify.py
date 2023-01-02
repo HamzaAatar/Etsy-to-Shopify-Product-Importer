@@ -1,6 +1,5 @@
-from copy import copy
 import csv
-
+from copy import copy
 
 header = ['Handle', 'Title', 'Body (HTML)', 'Vendor', 'Standardized Product Type', 'Custom Product Type', 'Tags', 'Published', 'Option1 Name', 'Option1 Value', 'Option2 Name', 'Option2 Value', 'Option3 Name', 'Option3 Value', 'Variant SKU', 'Variant Grams', 'Variant Inventory Tracker', 'Variant Inventory Qty', 'Variant Inventory Policy', 'Variant Fulfillment Service', 'Variant Price', 'Variant Compare At Price', 'Variant Requires Shipping', 'Variant Taxable', 'Variant Barcode', 'Image Src', 'Image Position', 'Image Alt Text', 'Gift Card', 'SEO Title', 'SEO Description', 'Google Shopping / Google Product Category', 'Google Shopping / Gender', 'Google Shopping / Age Group', 'Google Shopping / MPN', 'Google Shopping / AdWords Grouping', 'Google Shopping / AdWords Labels', 'Google Shopping / Condition', 'Google Shopping / Custom Product', 'Google Shopping / Custom Label 0', 'Google Shopping / Custom Label 1', 'Google Shopping / Custom Label 2', 'Google Shopping / Custom Label 3', 'Google Shopping / Custom Label 4', 'Variant Image', 'Variant Weight Unit', 'Variant Tax Code', 'Cost per item', 'Status']
 values = ['']*49
@@ -10,8 +9,7 @@ products = list()
 def main(filename, vendor):
     with open(filename, mode='r', encoding='utf-8') as csv_file:
         csv_reader = csv.DictReader(csv_file)
-        counter = 1
-        for row in csv_reader:
+        for i, row in enumerate(csv_reader):
             temp = copy(template)
             handle = row['title'].replace(' ', '-').strip()
             handle = handle.replace('|', '').strip()
@@ -22,7 +20,7 @@ def main(filename, vendor):
             temp['Standardized Product Type'] = '' # FIXED
             temp['Custom Product Type'] = '' # FIXED
             temp['Published'] = 'TRUE'
-            temp['Variant SKU'] = f'T-L{counter:06}'
+            temp['Variant SKU'] = f'T-L{i+1:06}'
             temp['Variant Inventory Tracker'] = 'shopify'
             temp['Variant Inventory Qty'] = '1'
             temp['Variant Inventory Policy'] = 'deny'
@@ -48,8 +46,6 @@ def main(filename, vendor):
                     temp_2['Image Position'] = i+1
                     temp_2['Image Alt Text'] = f"{handle}-{i+1}"
                     products.append(temp_2)
-            counter += 1
-    
     return products
 
 def convert(filename, vendor):
