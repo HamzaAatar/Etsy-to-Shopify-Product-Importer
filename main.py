@@ -20,7 +20,6 @@ def main(shop_url, vendor_name):
     print(f"Done! Check {shopify_data} to get your csv file.")
     return None
     
-
 if __name__ == '__main__':
     url = str(input('Enter Etsy Shop URL: '))
     vendor = str(input('Enter Shopify Store Name: '))
